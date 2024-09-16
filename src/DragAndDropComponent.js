@@ -1,38 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 
 const ItemTypes = {
   BOX: 'box',
 };
 
-const DraggableItem = ({ name }) => {
+const DraggableItem = ({ id, color }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.BOX,
-    item: { name },
+    item: { id, color },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-  }));
+  }), [id, color]);
 
   return (
     <div
       ref={drag}
       style={{
-        opacity: isDragging ? 0.5 : 1,
-        padding: '16px',
-        backgroundColor: '#f4b400',
-        marginBottom: '10px',
+        opacity: isDragging ? 0 : 1,
+        backgroundColor: color,
       }}
+      className="m-2 cursor-grab w-12 h-12"
     >
-      {name}
+      {id}
     </div>
   );
 };
 
-const DropZone = ({ onDrop }) => {
+const CellGrid = ({ onDrop, index, color }) => {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: ItemTypes.BOX,
-    drop: (item) => onDrop(item.name),
+    drop: (item) => onDrop(index, item.color, item.id),
     collect: (monitor) => ({
       isOver: monitor.isOver(),
     }),
@@ -41,37 +40,64 @@ const DropZone = ({ onDrop }) => {
   return (
     <div
       ref={drop}
-      style={{
-        padding: '16px',
-        height: '150px',
-        width: '200px',
-        backgroundColor: isOver ? '#34a853' : '#f1f1f1',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {isOver ? 'Drop here!' : 'Drag item here'}
+      className={`border border-black w-full h-full transition-colors duration-200 ${isOver ? 'bg-yellow-300' : color === 'blue' ? 'bg-blue-300' : color === 'red' ? 'bg-red-300' : color === 'yellow' ? 'bg-yellow-300' : color === 'green' ? 'bg-green-300' : 'bg-gray-300'
+        }`}
+    ></div>
+  );
+};
+
+const DropGrid = ({ handleDrop, cellColor }) => {
+  return (
+    <div className="grid grid-cols-5 grid-rows-5 gap-1 w-64 h-64">
+      {Array.from({ length: 25 }, (_, index) => (
+        <CellGrid color={cellColor[index]} key={index} onDrop={handleDrop} index={index} />
+      ))}
     </div>
   );
 };
 
 const DragAndDropComponent = () => {
-  const handleDrop = (itemName) => {
-    alert(`Dropped ${itemName}`);
+  const [currentColor, setCurrentColor] = useState(['blue', 'red', 'yellow', 'green']);
+  const [cellColor, setCellColor] = useState(Array(25).fill('gray')); // Initialize all cells as gray
+
+  const handleDrop = (index, color, id) => {
+    setCellColor((prevColors) => {
+      const newColors = [...prevColors];
+      newColors[index] = color;
+      return newColors;
+    });
+
+    console.log(color, id)
+
+    setCurrentColor((prevColor) => {
+      const colorCycle = {
+        blue: 'red',
+        red: 'yellow',
+        yellow: 'green',
+        green: 'blue'
+      };
+      var newColor = [...prevColor];
+      newColor[id] = colorCycle[prevColor[id]];
+      return newColor;
+    });
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-around', padding: '20px' }}>
+    <div className="flex justify-around p-20">
       <div>
-        <DraggableItem name="Item 1" />
-        <DraggableItem name="Item 2" />
+        <DraggableItem id='0' color={currentColor[0]} />
+        <DraggableItem id='1' color={currentColor[1]} />
+        <DraggableItem id='2' color={currentColor[2]} />
+        <DraggableItem id='3' color={currentColor[3]} />
       </div>
-
-      <DropZone onDrop={handleDrop} />
+      <DropGrid cellColor={cellColor} handleDrop={handleDrop} />
+      <div>
+        Color cycling works, Items are separate
+        Items need to be Tetris shape and affect fields with those shapes.
+        For starters, 1 item is L, another T
+      </div>
     </div>
   );
 };
 
 export default DragAndDropComponent;
-
