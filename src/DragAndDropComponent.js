@@ -235,67 +235,73 @@ const DragAndDropComponent = () => {
 
   const handleDrop = (row, col, color, id, blockType) => {
     const element = BlockTypes[blockType];
-    if (checkIfFilled(filledCells, row, col, blockType) && col - element.left >= 0 && col + element.right <= 4 && row - element.top >= 0 && row + element.bottom <= 4) {
-      setCellColor((prevColors) => {
-        const newColors = [...prevColors];
-        newColors[row][col] = color;
+    setFilledCells((prevFilledCells) => {
+      if (checkIfFilled(prevFilledCells, row, col, blockType) && col - element.left >= 0 && col + element.right <= 4 && row - element.top >= 0 && row + element.bottom <= 4) {
+        const newFilledCells = prevFilledCells.map(row => [...row]);
+        newFilledCells[row][col] = true;
         for (let i = 0; i < element.left; i++) {
-          newColors[row][col - i - 1] = color;
+          newFilledCells[row][col - i - 1] = true;
         }
         for (let i = 0; i < element.right; i++) {
-          newColors[row][col + i + 1] = color;
+          newFilledCells[row][col + i + 1] = true;
         }
         for (let i = 0; i < element.top; i++) {
-          newColors[row - i - 1][col] = color;
+          newFilledCells[row - i - 1][col] = true;
         }
         for (let i = 0; i < element.bottom; i++) {
-          newColors[row + i + 1][col] = color;
+          newFilledCells[row + i + 1][col] = true;
         }
-        return newColors;
-      });
-      setCurrentBlocks(prevBlocks => {
-        var newBlocks = [...prevBlocks];
-        const blockNames = Object.keys(BlockTypes);
-        do {
-          let randomNumber = Math.floor(Math.random() * blockNames.length)
-          newBlocks[id] = blockNames[randomNumber];
-        } while (prevBlocks[id] === newBlocks[id]);
-        return newBlocks
-      });
-      setCurrentColor((prevColor) => {
-        const colorCycle = [
-          "blue",
-          "yellow",
-          "green",
-          "purple",
-          "pink",
-          "orange"
-        ];
-        var newColor = [...prevColor];
-        do {
-          let randomNumber = Math.floor(Math.random() * colorCycle.length)
-          newColor[id] = colorCycle[randomNumber];
-        } while (newColor[id] === prevColor[id]);
-        return newColor;
-      });
-      setFilledCells(prevCells => {
-        const newCells = [...prevCells];
-        newCells[row][col] = true;
-        for (let i = 0; i < element.left; i++) {
-          newCells[row][col - i - 1] = true;
-        }
-        for (let i = 0; i < element.right; i++) {
-          newCells[row][col + i + 1] = true;
-        }
-        for (let i = 0; i < element.top; i++) {
-          newCells[row - i - 1][col] = true;
-        }
-        for (let i = 0; i < element.bottom; i++) {
-          newCells[row + i + 1][col] = true;
-        }
-        return newCells;
-      });
-    }
+
+        setCellColor((prevColors) => {
+          const newColors = prevColors.map(row => [...row]);
+          newColors[row][col] = color;
+          for (let i = 0; i < element.left; i++) {
+            newColors[row][col - i - 1] = color;
+          }
+          for (let i = 0; i < element.right; i++) {
+            newColors[row][col + i + 1] = color;
+          }
+          for (let i = 0; i < element.top; i++) {
+            newColors[row - i - 1][col] = color;
+          }
+          for (let i = 0; i < element.bottom; i++) {
+            newColors[row + i + 1][col] = color;
+          }
+          return newColors;
+        });
+
+        setCurrentBlocks(prevBlocks => {
+          const newBlocks = [...prevBlocks];
+          const blockNames = Object.keys(BlockTypes);
+          do {
+            let randomNumber = Math.floor(Math.random() * blockNames.length)
+            newBlocks[id] = blockNames[randomNumber];
+          } while (prevBlocks[id] === newBlocks[id]);
+          return newBlocks;
+        });
+
+        setCurrentColor((prevColor) => {
+          const colorCycle = [
+            "blue",
+            "yellow",
+            "green",
+            "purple",
+            "pink",
+            "orange"
+          ];
+          const newColor = [...prevColor];
+          do {
+            let randomNumber = Math.floor(Math.random() * colorCycle.length)
+            newColor[id] = colorCycle[randomNumber];
+          } while (newColor[id] === prevColor[id]);
+          return newColor;
+        });
+
+        return newFilledCells;
+      }
+      return prevFilledCells;
+    });
+
     setHoveredCells(Array.from({ length: 5 }, () => Array(5).fill(false)));
   }
 
