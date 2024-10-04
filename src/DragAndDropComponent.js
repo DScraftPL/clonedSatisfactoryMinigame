@@ -112,7 +112,64 @@ const cellGridColor = (color) => {
   }
 };
 
-const CellGrid = ({ onDrop, row, col, color, isOverBlock, isFilled }) => {
+const CellGrid = ({ onDrop, row, col, color, isOverBlock, filledCells }) => {
+  const borderTop = () => {
+    if (filledCells[row][col] === 0) {
+      return true;
+    }
+    if (row === 0) {
+      return true;
+    }
+    if (filledCells[row][col] !== filledCells[row - 1][col]) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  const borderBottom = () => {
+    if (filledCells[row][col] === 0) {
+      return true;
+    }
+    if (row === 4) {
+      return true;
+    }
+    if (filledCells[row][col] !== filledCells[row + 1][col]) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  const borderLeft = () => {
+    if (filledCells[row][col] === 0) {
+      return true;
+    }
+    if (col === 0) {
+      return true;
+    }
+    if (filledCells[row][col] !== filledCells[row][col - 1]) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  const borderRight = () => {
+    if (filledCells[row][col] === 0) {
+      return true;
+    }
+    if (col === 4) {
+      return true;
+    }
+    if (filledCells[row][col] !== filledCells[row][col + 1]) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  const isFilled = filledCells[row][col];
   const [{ isOver }, drop] = useDrop(() => ({
     accept: ItemTypes.BOX,
     drop: (item) => onDrop(row, col, item.color, item.id, item.blockType),
@@ -131,7 +188,12 @@ const CellGrid = ({ onDrop, row, col, color, isOverBlock, isFilled }) => {
   return (
     <div
       ref={drop}
-      className={`aspect-square border border-black h-full w-full transition-colors duration-200 ${(isOverBlock || isOver) ? isFilled ? "bg-red-500" : "bg-white" : cellGridColor(
+      className={`aspect-square 
+        ${borderTop() ? "border-t" : ""} 
+        ${borderBottom() ? "border-b" : ""}
+        ${borderLeft() ? "border-l" : ""}
+        ${borderRight() ? "border-r" : ""}
+        border-black h-full w-full transition-colors duration-200 ${(isOverBlock || isOver) ? isFilled ? "bg-red-500" : "bg-white" : cellGridColor(
         color
       )}`}
     ></div>
@@ -151,7 +213,7 @@ const DropGrid = ({ handleDrop, cellColor, hoveredCells, filledCells, handleRese
               row={row}
               col={col}
               isOverBlock={hoveredCells[row][col]}
-              isFilled={filledCells[row][col]}
+              filledCells={filledCells}
             />
           ))
         )}
@@ -173,13 +235,15 @@ const DragAndDropComponent = () => {
   const [currentBlocks, setCurrentBlocks] = useState(["Single", "I", "L", "mirror_L"])
   const [cellColor, setCellColor] = useState(Array.from({ length: 5 }, () => Array(5).fill("gray")));
   const [hoveredCells, setHoveredCells] = useState(Array.from({ length: 5 }, () => Array(5).fill(false)));
-  const [filledCells, setFilledCells] = useState(Array.from({ length: 5 }, () => Array(5).fill(false)));
+  const [filledCells, setFilledCells] = useState(Array.from({ length: 5 }, () => Array(5).fill(0)));
+  const [currentId, setCurrentId] = useState(1);
 
   const handleReset = () => {
-    setCellColor((prev) => Array.from({ length: 5 }, () => Array(5).fill("gray")));
-    setFilledCells((prev) => {
-      return Array.from({ length: 5 }, () => Array(5).fill(false));
+    setCellColor(() => Array.from({ length: 5 }, () => Array(5).fill("gray")));
+    setFilledCells(() => {
+      return Array.from({ length: 5 }, () => Array(5).fill(0));
     });
+    setCurrentId(1);
   };
 
   const handleHover = (row, col, blockType) => {
@@ -206,26 +270,29 @@ const DragAndDropComponent = () => {
   const checkIfFilled = (filled, row, col, blockType) => {
     const element = BlockTypes[blockType];
     console.log(filled)
-    if (filled[row][col]) {
+    if (row - element.top < 0 || row - element.bottom > 4) {
+      return false;
+    }
+    if (filled[row][col] !== 0) {
       return false;
     }
     for (let i = 0; i < element.left; i++) {
-      if (filled[row][col - i - 1]) {
+      if (filled[row][col - i - 1] !== 0) {
         return false;
       }
     }
     for (let i = 0; i < element.right; i++) {
-      if (filled[row][col + i + 1]) {
+      if (filled[row][col + i + 1] !== 0) {
         return false;
       }
     }
     for (let i = 0; i < element.top; i++) {
-      if (filled[row - i - 1][col]) {
+      if (filled[row - i - 1][col] !== 0) {
         return false;
       }
     }
     for (let i = 0; i < element.bottom; i++) {
-      if (filled[row + i + 1][col]) {
+      if (filled[row + i + 1][col] !== 0) {
         return false;
       }
     }
@@ -235,78 +302,79 @@ const DragAndDropComponent = () => {
 
   const handleDrop = (row, col, color, id, blockType) => {
     const element = BlockTypes[blockType];
-    setFilledCells((prevFilledCells) => {
-      if (checkIfFilled(prevFilledCells, row, col, blockType) && col - element.left >= 0 && col + element.right <= 4 && row - element.top >= 0 && row + element.bottom <= 4) {
-        const newFilledCells = prevFilledCells.map(row => [...row]);
-        newFilledCells[row][col] = true;
-        for (let i = 0; i < element.left; i++) {
-          newFilledCells[row][col - i - 1] = true;
-        }
-        for (let i = 0; i < element.right; i++) {
-          newFilledCells[row][col + i + 1] = true;
-        }
-        for (let i = 0; i < element.top; i++) {
-          newFilledCells[row - i - 1][col] = true;
-        }
-        for (let i = 0; i < element.bottom; i++) {
-          newFilledCells[row + i + 1][col] = true;
-        }
-
-        setCellColor((prevColors) => {
-          const newColors = prevColors.map(row => [...row]);
-          newColors[row][col] = color;
+    setCurrentId((prevCurrentId) => {
+      setFilledCells((prevFilledCells) => {
+        if (checkIfFilled(prevFilledCells, row, col, blockType) && col - element.left >= 0 && col + element.right <= 4 && row - element.top >= 0 && row + element.bottom <= 4) {
+          const newFilledCells = prevFilledCells.map(row => [...row]);
+          newFilledCells[row][col] = prevCurrentId;
           for (let i = 0; i < element.left; i++) {
-            newColors[row][col - i - 1] = color;
+            newFilledCells[row][col - i - 1] = prevCurrentId;
           }
           for (let i = 0; i < element.right; i++) {
-            newColors[row][col + i + 1] = color;
+            newFilledCells[row][col + i + 1] = prevCurrentId;
           }
           for (let i = 0; i < element.top; i++) {
-            newColors[row - i - 1][col] = color;
+            newFilledCells[row - i - 1][col] = prevCurrentId;
           }
           for (let i = 0; i < element.bottom; i++) {
-            newColors[row + i + 1][col] = color;
+            newFilledCells[row + i + 1][col] = prevCurrentId;
           }
-          return newColors;
-        });
 
-        setCurrentBlocks(prevBlocks => {
-          const newBlocks = [...prevBlocks];
-          const blockNames = Object.keys(BlockTypes);
-          do {
-            let randomNumber = Math.floor(Math.random() * blockNames.length)
-            newBlocks[id] = blockNames[randomNumber];
-          } while (prevBlocks[id] === newBlocks[id]);
-          return newBlocks;
-        });
+          setCellColor((prevColors) => {
+            const newColors = prevColors.map(row => [...row]);
+            newColors[row][col] = color;
+            for (let i = 0; i < element.left; i++) {
+              newColors[row][col - i - 1] = color;
+            }
+            for (let i = 0; i < element.right; i++) {
+              newColors[row][col + i + 1] = color;
+            }
+            for (let i = 0; i < element.top; i++) {
+              newColors[row - i - 1][col] = color;
+            }
+            for (let i = 0; i < element.bottom; i++) {
+              newColors[row + i + 1][col] = color;
+            }
+            return newColors;
+          });
 
-        setCurrentColor((prevColor) => {
-          const colorCycle = [
-            "blue",
-            "yellow",
-            "green",
-            "purple",
-            "pink",
-            "orange"
-          ];
-          const newColor = [...prevColor];
-          do {
-            let randomNumber = Math.floor(Math.random() * colorCycle.length)
-            newColor[id] = colorCycle[randomNumber];
-          } while (newColor[id] === prevColor[id]);
-          return newColor;
-        });
+          setCurrentBlocks(prevBlocks => {
+            const newBlocks = [...prevBlocks];
+            const blockNames = Object.keys(BlockTypes);
+            do {
+              let randomNumber = Math.floor(Math.random() * blockNames.length)
+              newBlocks[id] = blockNames[randomNumber];
+            } while (prevBlocks[id] === newBlocks[id]);
+            return newBlocks;
+          });
 
-        return newFilledCells;
-      }
-      return prevFilledCells;
-    });
+          setCurrentColor((prevColor) => {
+            const colorCycle = [
+              "blue",
+              "yellow",
+              "green",
+              "purple",
+              "pink",
+              "orange"
+            ];
+            const newColor = [...prevColor];
+            do {
+              let randomNumber = Math.floor(Math.random() * colorCycle.length)
+              newColor[id] = colorCycle[randomNumber];
+            } while (newColor[id] === prevColor[id]);
+            return newColor;
+          });
 
+          return newFilledCells;
+        }
+        return prevFilledCells;
+      });
+      return prevCurrentId + 1;
+    })
     setHoveredCells(Array.from({ length: 5 }, () => Array(5).fill(false)));
   }
 
   useEffect(() => {
-    // Logic that should run after cellColor or filledCells updates
     console.log("CellColor or filledCells updated!");
   }, [cellColor, filledCells]);
 
