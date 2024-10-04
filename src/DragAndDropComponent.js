@@ -1,229 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { useDrag, useDrop } from "react-dnd";
-
-const ItemTypes = {
-  BOX: "box",
-};
-
-const BlockTypes = {
-  Single: {
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0
-  },
-  T: {
-    left: 1,
-    right: 1,
-    top: 0,
-    bottom: 1
-  },
-  reverse_T: {
-    left: 1,
-    right: 1,
-    top: 1,
-    bottom: 0
-  },
-  left_T: {
-    left: 1,
-    right: 0,
-    top: 1,
-    bottom: 1
-  },
-  right_T: {
-    left: 0,
-    right: 1,
-    top: 1,
-    bottom: 1
-  },
-  L: {
-    left: 0,
-    right: 1,
-    top: 2,
-    bottom: 0
-  },
-  mirror_L: {
-    left: 1,
-    right: 0,
-    top: 2,
-    bottom: 0
-  },
-  I: {
-    left: 0,
-    right: 0,
-    top: 1,
-    bottom: 2
-  },
-  tilted_I: {
-    left: 1,
-    right: 2,
-    top: 0,
-    bottom: 0
-  },
-}
-
-const DraggableItem = ({ id, color, blockType, handleHover }) => {
-  const [{ isDragging }, drag] = useDrag(
-    () => ({
-      type: ItemTypes.BOX,
-      item: { id, color, blockType, onHover: handleHover },
-      collect: (monitor) => ({
-        isDragging: monitor.isDragging(),
-      }),
-      end: (item, monitor) => {
-        if (!monitor.didDrop()) {
-          handleHover(10, 10, item.blockType);
-        }
-      },
-    }),
-    [id, color, blockType]
-  );
-
-  return (
-    <div
-      ref={drag}
-      style={{
-        opacity: isDragging ? 0 : 1,
-        backgroundColor: color,
-      }}
-      className="m-2 cursor-grab w-12 h-12"
-    >
-      {blockType}
-    </div>
-  );
-};
-
-const cellGridColor = (color) => {
-  switch (color) {
-    case "blue":
-      return "bg-blue-500";
-    case "yellow":
-      return "bg-yellow-500";
-    case "green":
-      return "bg-green-500";
-    case "purple":
-      return "bg-violet-500";
-    case "orange":
-      return "bg-orange-500";
-    case "pink":
-      return "bg-pink-500";
-    default:
-      return "bg-gray-500";
-  }
-};
-
-const CellGrid = ({ onDrop, row, col, color, isOverBlock, filledCells }) => {
-  const borderTop = () => {
-    if (filledCells[row][col] === 0) {
-      return true;
-    }
-    if (row === 0) {
-      return true;
-    }
-    if (filledCells[row][col] !== filledCells[row - 1][col]) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  const borderBottom = () => {
-    if (filledCells[row][col] === 0) {
-      return true;
-    }
-    if (row === 4) {
-      return true;
-    }
-    if (filledCells[row][col] !== filledCells[row + 1][col]) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  const borderLeft = () => {
-    if (filledCells[row][col] === 0) {
-      return true;
-    }
-    if (col === 0) {
-      return true;
-    }
-    if (filledCells[row][col] !== filledCells[row][col - 1]) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  const borderRight = () => {
-    if (filledCells[row][col] === 0) {
-      return true;
-    }
-    if (col === 4) {
-      return true;
-    }
-    if (filledCells[row][col] !== filledCells[row][col + 1]) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  const isFilled = filledCells[row][col];
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: ItemTypes.BOX,
-    drop: (item) => onDrop(row, col, item.color, item.id, item.blockType),
-    hover: (item, monitor) => {
-      if (monitor.isOver()) {
-        item.onHover(row, col, item.blockType)
-      } else {
-        item.onHover(10, 10, item.blockType)
-      }
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-    }),
-  }));
-
-  return (
-    <div
-      ref={drop}
-      className={`aspect-square 
-        ${borderTop() ? "border-t" : ""} 
-        ${borderBottom() ? "border-b" : ""}
-        ${borderLeft() ? "border-l" : ""}
-        ${borderRight() ? "border-r" : ""}
-        border-black h-full w-full transition-colors duration-200 ${(isOverBlock || isOver) ? isFilled ? "bg-red-500" : "bg-white" : cellGridColor(
-        color
-      )}`}
-    ></div>
-  );
-};
-
-const DropGrid = ({ handleDrop, cellColor, hoveredCells, filledCells, handleReset }) => {
-  return (
-    <div>
-      <div className="grid grid-cols-5 grid-rows-5 gap-0 h-64 w-64">
-        {Array.from({ length: 5 }, (_, row) =>
-          Array.from({ length: 5 }, (_, col) => (
-            <CellGrid
-              color={cellColor[row][col]}
-              key={`${row}-${col}`}
-              onDrop={handleDrop}
-              row={row}
-              col={col}
-              isOverBlock={hoveredCells[row][col]}
-              filledCells={filledCells}
-            />
-          ))
-        )}
-      </div>
-      <button onClick={handleReset}>Reset!</button>
-    </div>
-  );
-
-};
-
+import React, { useState } from "react";
+import BlockTypes from './data/blockTypes.json'
+import DraggableItem from './compontents/DraggableItem.js'
+import DropGrid from './compontents/DropGrid.js'
 
 const DragAndDropComponent = () => {
   const [currentColor, setCurrentColor] = useState([
@@ -296,7 +74,6 @@ const DragAndDropComponent = () => {
         return false;
       }
     }
-
     return true;
   };
 
@@ -307,6 +84,7 @@ const DragAndDropComponent = () => {
         if (checkIfFilled(prevFilledCells, row, col, blockType) && col - element.left >= 0 && col + element.right <= 4 && row - element.top >= 0 && row + element.bottom <= 4) {
           const newFilledCells = prevFilledCells.map(row => [...row]);
           newFilledCells[row][col] = prevCurrentId;
+
           for (let i = 0; i < element.left; i++) {
             newFilledCells[row][col - i - 1] = prevCurrentId;
           }
@@ -374,11 +152,6 @@ const DragAndDropComponent = () => {
     setHoveredCells(Array.from({ length: 5 }, () => Array(5).fill(false)));
   }
 
-  useEffect(() => {
-    console.log("CellColor or filledCells updated!");
-  }, [cellColor, filledCells]);
-
-
   return (
     <div className="flex flex-wrap justify-around p-20">
       <div>
@@ -390,10 +163,8 @@ const DragAndDropComponent = () => {
       <DropGrid cellColor={cellColor} handleDrop={handleDrop} handleReset={handleReset} hoveredCells={hoveredCells} filledCells={filledCells} />
       <div>
         humble beginings, now i need to:
-        fortify borders of item,
         display item on left,
         items on left start from center ? (try and error if fits, when center changes?, maybe create starting point and change it to the end? weird with T and L, maybe the method is flawed from the begining, because how will i highlight all 4 elements at once ????)
-        border of items? null table with unique index of item and if id != id, setup border
       </div>
     </div>
   );
